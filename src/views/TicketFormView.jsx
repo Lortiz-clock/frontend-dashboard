@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { consultarCategorias, consultarPrioridades, consultarAreas } from '../api/catalogoService.js';
-import { crearTicket } from '../api/ticketService.js';
+import { crearTicket, subirAdjuntoTicket } from '../api/ticketService.js';
 
 export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
-  // Estado del formulario
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -12,18 +11,15 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
     codigoArea: ''
   });
 
-  // Estados para los catálogos
   const [categorias, setCategorias] = useState([]);
   const [prioridades, setPrioridades] = useState([]);
   const [areas, setAreas] = useState([]);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
-
-  // Estado de envío y errores
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState({});
   const [errorApi, setErrorApi] = useState(null);
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null); // ⭐ Nuevo estado
 
-  // ⭐ Cargar catálogos al montar el componente
   useEffect(() => {
     async function cargarCatalogos() {
       try {
@@ -53,6 +49,31 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
     }
   }
 
+  // ⭐ Manejar la selección de archivo
+  function handleFileChange(e) {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Validar tamaño (5MB máximo)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorApi('El archivo supera el límite de 5MB.');
+        e.target.value = ''; // Limpiar el input
+        return;
+      }
+      
+      // Validar extensión
+      const extensionesPermitidas = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!extensionesPermitidas.includes(file.type)) {
+        setErrorApi('Solo se permiten imágenes (JPG, PNG, GIF) o PDF.');
+        e.target.value = '';
+        return;
+      }
+
+      setArchivoSeleccionado(file);
+      setErrorApi(null);
+    }
+  }
+
   function validar() {
     const nuevosErrores = {};
     if (!formData.titulo.trim()) nuevosErrores.titulo = 'El título es obligatorio.';
@@ -77,6 +98,7 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
     setErrorApi(null);
 
     try {
+      // 1. Crear el ticket
       const respuesta = await crearTicket({
         titulo: formData.titulo.trim(),
         descripcion: formData.descripcion.trim(),
@@ -86,6 +108,20 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
       });
 
       if (respuesta.exito) {
+        // 2. Si hay archivo, subirlo
+        if (archivoSeleccionado) {
+          // Aquí asumimos que la respuesta de crearTicket nos devuelve el ID del nuevo ticket
+          // Si tu API no lo devuelve, tendríamos que ajustar el backend para que lo devuelva.
+          const nuevoTicketId = respuesta.datos?.codigoTicket || respuesta.datos;
+          
+          if (nuevoTicketId) {
+            const respAdjunto = await subirAdjuntoTicket(nuevoTicketId, archivoSeleccionado);
+            if (!respAdjunto.exito) {
+              // Si el adjunto falla, el ticket ya fue creado, pero avisamos al usuario
+              alert('El ticket se creó, pero hubo un error al subir el archivo: ' + (respAdjunto.mensaje || ''));
+            }
+          }
+        }
         onGuardadoExitoso();
       } else {
         setErrorApi(respuesta.mensaje || 'Error al crear el ticket.');
@@ -192,6 +228,20 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
           ))}
         </select>
         {errores.codigoArea && <span className="field-error">{errores.codigoArea}</span>}
+      </div>
+
+      {/* ⭐ NUEVO: Input para adjuntar archivo */}
+      <div className="form-group">
+        <label htmlFor="adjunto">Adjuntar captura o archivo (Opcional)</label>
+        <input
+          type="file"
+          id="adjunto"
+          name="adjunto"
+          onChange={handleFileChange}
+          accept="image/png, image/jpeg, image/gif, application/pdf"
+          className="input-file"
+        />
+        <span className="field-hint">Formatos permitidos: JPG, PNG, GIF, PDF (Máx 5MB)</span>
       </div>
 
       <div className="form-actions">

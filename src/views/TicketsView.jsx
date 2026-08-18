@@ -2,8 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { Cargando, Vacio, ErrorEstado } from '../components/EstadoCarga.jsx';
 import Modal from '../components/Modal.jsx';
 import TicketFormView from './TicketFormView.jsx';
+import AsignarAgenteForm from './AsignarAgenteForm.jsx';
+import { cambiarEstadoTicket } from '../api/ticketService.js';
+import ResolverTicketForm from './ResolverTicketForm.jsx';
+import TicketDetailView from './TicketDetailView.jsx';
 
-// ⭐ CORREGIDO: IDs reales de tu BD
 const ESTADOS = {
   2: { label: 'Nueva',       className: 'badge-azul'    },
   3: { label: 'Asignada',    className: 'badge-naranja' },
@@ -25,9 +28,12 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
   const [filtroPrioridad, setFiltroPrioridad]   = useState('');
   const [busqueda, setBusqueda]                 = useState('');
 
-  // ⭐ Estado para el modal
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [ticketAAsignar, setTicketAAsignar] = useState(null);
+  const [procesando, setProcesando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState('');
+  const [ticketAResolver, setTicketAResolver] = useState(null);
+  const [ticketSeleccionado, setTicketSeleccionado] = useState(null);
 
   function abrirModalCrear() {
     setModalAbierto(true);
@@ -39,12 +45,110 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
 
   async function onGuardadoExitoso() {
     cerrarModal();
-
     setMensajeExito('¡Ticket creado correctamente!'); 
     setTimeout(() => setMensajeExito(''), 3000);
     if (onReintentar) {
       onReintentar();
     }
+  }
+
+  function onAsignacionExitosa() {
+    setTicketAAsignar(null);
+    setMensajeExito('¡Ticket asignado correctamente!'); 
+    setTimeout(() => setMensajeExito(''), 3000);
+    if (onReintentar) {
+      onReintentar();
+    }
+  }
+
+  async function ejecutarAccion(codigoTicket, accionNombre, accionNumero) {
+    if (accionNumero === 1) {
+      setTicketAAsignar(codigoTicket);
+      return;
+    }
+
+    if (!window.confirm(`¿Estás seguro que quieres ${accionNombre} el ticket #${codigoTicket}?`)) {
+      return;
+    }
+
+    setProcesando(true);
+    try {
+      const respuesta = await cambiarEstadoTicket(codigoTicket, accionNumero);
+      if (respuesta.exito) {
+        alert(`✅ Ticket ${accionNombre} correctamente`);
+        if (onReintentar) {
+          onReintentar();
+        }
+      } else {
+        alert(`❌ Error: ${respuesta.mensaje || respuesta.detalle}`);
+      }
+    } catch (err) {
+      alert(`❌ Error: ${err.message}`);
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  async function ejecutarAccion(codigoTicket, accionNombre, accionNumero) {
+  // Si es "Asignar" (1), abrimos el modal de asignación
+  if (accionNumero === 1) {
+    setTicketAAsignar(codigoTicket);
+    return;
+  }
+
+  // ⭐ Si es "Resolver" (4), abrimos el modal de resolución
+  if (accionNumero === 4) {
+    setTicketAResolver(codigoTicket);
+    return;
+  }
+
+  // Para las demás acciones (Iniciar, Cerrar, Cancelar)
+  if (!window.confirm(`¿Estás seguro que quieres ${accionNombre} el ticket #${codigoTicket}?`)) {
+    return;
+  }
+
+  setProcesando(true);
+  try {
+    const respuesta = await cambiarEstadoTicket(codigoTicket, accionNumero);
+    if (respuesta.exito) {
+      alert(`✅ Ticket ${accionNombre} correctamente`);
+      if (onReintentar) onReintentar();
+    } else {
+      alert(`❌ Error: ${respuesta.mensaje || respuesta.detalle}`);
+    }
+  } catch (err) {
+    alert(`❌ Error: ${err.message}`);
+  } finally {
+    setProcesando(false);
+  }
+}
+
+// ⭐ Función cuando se resolvió correctamente
+function onResolucionExitosa() {
+  setTicketAResolver(null);
+  setMensajeExito('¡Ticket resuelto correctamente!'); 
+  setTimeout(() => setMensajeExito(''), 3000);
+  if (onReintentar) onReintentar();
+}
+
+  function obtenerBotonesAccion(ticket) {
+    const botones = [];
+    const estado = ticket.codigoEstado;
+
+    if (estado === 2) {
+      botones.push({ nombre: 'Asignar', accion: 1, clase: 'btn-naranja' });
+      botones.push({ nombre: 'Cancelar', accion: 2, clase: 'btn-rojo' });
+    } else if (estado === 3) {
+      botones.push({ nombre: 'Iniciar', accion: 3, clase: 'btn-morado' });
+      botones.push({ nombre: 'Cancelar', accion: 2, clase: 'btn-rojo' });
+    } else if (estado === 4) {
+      botones.push({ nombre: 'Resolver', accion: 4, clase: 'btn-verde' });
+      botones.push({ nombre: 'Cancelar', accion: 2, clase: 'btn-rojo' });
+    } else if (estado === 5) {
+      botones.push({ nombre: 'Cerrar', accion: 5, clase: 'btn-gris' });
+    }
+
+    return botones;
   }
 
   const ticketsFiltrados = useMemo(() => {
@@ -58,10 +162,15 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
     });
   }, [tickets, filtroEstado, filtroPrioridad, busqueda]);
 
-  function limpiarFiltros() {
+   function limpiarFiltros() {
     setFiltroEstado('');
     setFiltroPrioridad('');
     setBusqueda('');
+  }
+
+  // ⭐ Si hay un ticket seleccionado, mostramos el detalle
+  if (ticketSeleccionado) {
+    return <TicketDetailView codigoTicket={ticketSeleccionado} onCerrar={() => setTicketSeleccionado(null)} />;
   }
 
   if (cargando) return <Cargando mensaje="Cargando tickets..." />;
@@ -76,13 +185,13 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
           padding: '12px 20px',
           borderRadius: '8px',
           marginBottom: '15px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1',
-          fontWeight:'bold',
+          fontWeight: 'bold',
           textAlign: 'center'
         }}>
           ✅ {mensajeExito}
-          </div>
+        </div>
       )}
+
       <div className="action-bar">
         <div style={{ margin: 0, padding: 0, background: 'transparent', color: '#64748b' }}>
           <strong>{tickets.length}</strong> tickets en total
@@ -92,7 +201,6 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
         </button>
       </div>
 
-      {/* Filtros */}
       <div className="filtros-bar">
         <div className="filtro-group">
           <label>Estado:</label>
@@ -133,7 +241,6 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
         </button>
       </div>
 
-      {/* Tabla */}
       <div className="table-container">
         {ticketsFiltrados.length === 0 ? (
           <Vacio mensaje="No se encontraron tickets con los filtros aplicados." />
@@ -151,36 +258,66 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
                   <th>Asignado</th>
                   <th>Prioridad</th>
                   <th>Estado</th>
-                  <th>Fecha Creación</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {ticketsFiltrados.map(ticket => (
-                  <tr key={ticket.codigoTicket}>
-                    <td>#{ticket.codigoTicket}</td>
-                    <td className="td-titulo">{ticket.titulo}</td>
-                    <td>{ticket.nombreCreador}</td>
-                    <td>{ticket.nombreAsignado}</td>
-                    <td>
-                      <span className={`badge ${PRIORIDADES[ticket.codigoPrioridad]?.className || ''}`}>
-                        {PRIORIDADES[ticket.codigoPrioridad]?.label || 'N/A'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${ESTADOS[ticket.codigoEstado]?.className || ''}`}>
-                        {ESTADOS[ticket.codigoEstado]?.label || 'Desconocido'}
-                      </span>
-                    </td>
-                    <td>{new Date(ticket.fechaCreacion).toLocaleDateString()}</td>
-                  </tr>
-                ))}
+                                {ticketsFiltrados.map(ticket => {
+                  const botones = obtenerBotonesAccion(ticket);
+                  return (
+                    <tr key={ticket.codigoTicket}>
+                      {/* ⭐ Cambiamos el texto plano por un botón */}
+                      <td>
+                        <button 
+                          className="btn-link" 
+                          onClick={() => setTicketSeleccionado(ticket.codigoTicket)}
+                          style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: 0, fontWeight: 'bold' }}
+                        >
+                          #{ticket.codigoTicket}
+                        </button>
+                      </td>
+                      <td className="td-titulo">{ticket.titulo}</td>
+                      <td>{ticket.nombreCreador}</td>
+                      <td>{ticket.nombreAsignado}</td>
+                      <td>
+                        <span className={`badge ${PRIORIDADES[ticket.codigoPrioridad]?.className || ''}`}>
+                          {PRIORIDADES[ticket.codigoPrioridad]?.label || 'N/A'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${ESTADOS[ticket.codigoEstado]?.className || ''}`}>
+                          {ESTADOS[ticket.codigoEstado]?.label || 'Desconocido'}
+                        </span>
+                      </td>
+                      <td>{new Date(ticket.fechaCreacion).toLocaleDateString()}</td>
+                      <td className="td-acciones">
+                        {botones.length === 0 ? (
+                          <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>
+                        ) : (
+                          botones.map((btn, i) => (
+                            <button
+                              key={i}
+                              className={`btn btn-sm ${btn.clase}`}
+                              onClick={() => ejecutarAccion(ticket.codigoTicket, btn.nombre, btn.accion)}
+                              disabled={procesando}
+                              style={{ marginRight: '4px', marginBottom: '4px' }}
+                            >
+                              {btn.nombre}
+                            </button>
+                          ))
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </>
         )}
       </div>
 
-      {/* ⭐ AGREGADO: El Modal que faltaba */}
+      {/* Modal para Crear Ticket */}
       <Modal
         titulo="Crear Nuevo Ticket"
         abierto={modalAbierto}
@@ -191,6 +328,37 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
           onCancelar={cerrarModal}
         />
       </Modal>
+
+      {/* Modal para Asignar Agente */}
+      <Modal
+        titulo={`Asignar Ticket #${ticketAAsignar || ''}`}
+        abierto={ticketAAsignar !== null}
+        onCerrar={() => setTicketAAsignar(null)}
+      >
+        {ticketAAsignar && (
+          <AsignarAgenteForm
+            codigoTicket={ticketAAsignar}
+            onAsignacionExitosa={onAsignacionExitosa}
+            onCancelar={() => setTicketAAsignar(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Modal para Resolver Ticket */}
+      <Modal
+        titulo={`Resolver Ticket #${ticketAResolver || ''}`}
+        abierto={ticketAResolver !== null}
+        onCerrar={() => setTicketAResolver(null)}
+      >
+        {ticketAResolver && (
+          <ResolverTicketForm
+            codigoTicket={ticketAResolver}
+            onResolucionExitosa={onResolucionExitosa}
+            onCancelar={() => setTicketAResolver(null)}
+          />
+        )}
+      </Modal>
+
     </div>
   );
 }

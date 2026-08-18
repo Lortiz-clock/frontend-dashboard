@@ -15,3 +15,23 @@ export async function crearTicket(ticket) {
     body: ticket,
   });
 }
+
+// Cambiar el estado de un ticket (ej: Iniciar, Resolver, Cerrar)
+export async function cambiarEstadoTicket(codigoTicket, accion, comentario = '') {
+  return await apiClient('/api/Ticket/CambiarEstado', {
+    method: 'POST',
+    body: { codigoTicket, accion, comentario }
+  });
+}
+// Asignar un ticket a un agente
+export async function asignarTicket(codigoTicket, codigoAgente) {
+  return await apiClient('/api/Ticket/AsignarTicket', {
+    method: 'POST',
+    body: { codigoTicket, codigoAgente }
+  });
+}
+
+// Obtener el detalle completo de un ticket
+export async function obtenerDetalleTicket(codigoTicket) {
+  return await apiClient(`/api/Ticket/ObtenerDetalle/${codigoTicket}`);
+}
