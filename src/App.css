@@ -11,7 +11,7 @@
 
 /* ---------- SIDEBAR ---------- */
 .sidebar {
-  width: 175px;
+  width: 210px;
   background: #1e293b;
   color: white;
   display: flex;
@@ -287,14 +287,14 @@
 .custom-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem; /* ⭐ Letras un poco más pequeñas */
+  font-size: 0.85rem; /* Letras un poco más pequeñas */
 }
 
 .custom-table th, .custom-table td {
-  padding: 10px 12px; /* ⭐ Padding reducido */
+  padding: 10px 12px; /* Padding reducido */
   text-align: left;
   border-bottom: 1px solid #f1f5f9;
-  white-space: nowrap; /* ⭐ Evita que el texto se rompa en varias líneas */
+  white-space: nowrap; /* Evita que el texto se rompa en varias líneas */
 }
 
 .custom-table th {
@@ -315,7 +315,7 @@
 }
 
 .td-titulo {
-  max-width: 200px; /* ⭐ Reducido de 280px */
+  max-width: 200px; /* Reducido de 280px */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1171,4 +1171,97 @@
 .input-file:hover {
   border-color: #3b82f6;
   background: #eff6ff;
+}
+/* Adjuntos */
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.attachment-icon {
+  font-size: 1.5rem;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.attachment-actions a {
+  text-decoration: none;
+}
+/* Adjuntos */
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.attachment-icon {
+  font-size: 1.5rem;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.attachment-actions a {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.attachment-actions a.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.attachment-actions a.btn-primary {
+  background: #3b82f6;
+  color: white;
 }

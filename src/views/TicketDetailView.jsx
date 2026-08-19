@@ -89,6 +89,44 @@ export default function TicketDetailView({ codigoTicket, onCerrar }) {
           </div>
         </div>
       )}
+      {/* Archivos Adjuntos */}
+      {ticket.adjuntos && ticket.adjuntos.length > 0 && (
+        <div className="detail-card">
+          <h3>Archivos Adjuntos</h3>
+          <div className="attachments-list">
+            {ticket.adjuntos.map(adj => (
+              <div key={adj.codigoAdjunto} className="attachment-item">
+                <span className="attachment-icon">
+                  {adj.tipoArchivo.includes('image') ? '🖼️' : 
+                   adj.tipoArchivo.includes('pdf') ? '📄' : 
+                   adj.tipoArchivo.includes('zip') || adj.tipoArchivo.includes('rar') ? '🗜️' : 
+                   adj.tipoArchivo.includes('sheet') || adj.tipoArchivo.includes('excel') ? '📊' :
+                   adj.tipoArchivo.includes('word') || adj.tipoArchivo.includes('document') ? '📝' : '📎'}
+                </span>
+                <span className="attachment-name">{adj.nombreArchivo}</span>
+                <div className="attachment-actions">
+                  <a 
+                    href={`https://localhost:7122${adj.rutaArchivo}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-secondary"
+                  >
+                    👁️ Ver
+                  </a>
+                  <a 
+                    href={`https://localhost:7122${adj.rutaArchivo}`} 
+                    download={adj.nombreArchivo}
+                    className="btn btn-sm btn-primary"
+                  >
+                    ⬇️ Descargar
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 }

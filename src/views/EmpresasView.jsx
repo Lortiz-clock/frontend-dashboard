@@ -8,7 +8,8 @@ import { Cargando, Vacio, ErrorEstado } from '../components/EstadoCarga.jsx';
 import Modal from '../components/Modal.jsx';
 import EmpresaFormView from './EmpresaFormView.jsx';
 
-export default function EmpresasView() {
+export default function EmpresasView({usuario}) {
+  const esAdmin = usuario?.rol === 'SuperUsuario';
   const [empresas, setEmpresas]     = useState([]);
   const [cargando, setCargando]     = useState(true);
   const [error, setError]           = useState(null);
@@ -122,9 +123,11 @@ export default function EmpresasView() {
             {buscando ? 'Buscando...' : '🔍 Buscar'}
           </button>
         </div>
+        {esAdmin && (
         <button className="btn btn-primary" onClick={abrirModalCrear}>
           ➕ Nueva Empresa
         </button>
+        )}
       </div>
 
       <div className="table-container">
@@ -151,6 +154,8 @@ export default function EmpresasView() {
                     </span>
                   </td>
                   <td className="td-acciones">
+                    {esAdmin ? (
+                      <>
                     <button
                       className="btn btn-sm btn-secondary"
                       onClick={() => abrirModalEditar(empresa)}
@@ -164,6 +169,10 @@ export default function EmpresasView() {
                     >
                       🗑️ Eliminar
                     </button>
+                    </>
+                    ) : ( 
+                      <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>
+                    )}
                   </td>
                 </tr>
               ))}

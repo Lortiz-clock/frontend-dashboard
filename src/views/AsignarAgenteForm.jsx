@@ -14,7 +14,7 @@ export default function AsignarAgenteForm({ codigoTicket, onAsignacionExitosa, o
       try {
         const respuesta = await consultarUsuarios();
         if (respuesta.exito) {
-          const agentesYAdmins = respuesta.datos.filter(u => u.rol === 'Agente' || u.rol === 'Admin');
+          const agentesYAdmins = respuesta.datos.filter(u => u.rol === 'Agente' || u.rol === 'Admin' || u.rol === 'SuperUsuario');
           setUsuarios(agentesYAdmins);
         }
       } catch (err) {
@@ -67,11 +67,16 @@ export default function AsignarAgenteForm({ codigoTicket, onAsignacionExitosa, o
           required
         >
           <option value="">-- Selecciona un agente --</option>
-          {usuarios.map(u => (
-            <option key={u.codigoUsuario} value={u.codigoUsuario}>
-              {u.nombre} ({u.rol} - {u.nombreArea || 'Sin área'})
-            </option>
-          ))}
+                    {usuarios.map(u => {
+            // ⭐ Enmascarar el rol SuperUsuario como Admin para el usuario final
+            const rolMostrar = u.rol === 'SuperUsuario' ? 'Admin' : u.rol;
+            
+            return (
+              <option key={u.codigoUsuario} value={u.codigoUsuario}>
+                {u.nombre} ({rolMostrar} - {u.nombreArea || 'Sin área'})
+              </option>
+            );
+          })}
         </select>
       </div>
 

@@ -120,10 +120,11 @@ function App() {
             cargando={cargando}
             error={error}
             onReintentar={cargarTickets}
+            usuario={usuarioActual}
           />
         );
       case 'Empresas':
-        return <EmpresasView />;
+        return <EmpresasView usuario={usuarioActual} />;
       case 'Reportes':
         return <ReportesView tickets={tickets} />;
       default:

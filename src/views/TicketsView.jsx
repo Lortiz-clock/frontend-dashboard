@@ -23,7 +23,7 @@ const PRIORIDADES = {
   4: { label: 'Crítica', className: 'badge-morado'  },
 };
 
-export default function TicketsView({ tickets, cargando, error, onReintentar }) {
+export default function TicketsView({ tickets, cargando, error, onReintentar, usuario }) {
   const [filtroEstado, setFiltroEstado]         = useState('');
   const [filtroPrioridad, setFiltroPrioridad]   = useState('');
   const [busqueda, setBusqueda]                 = useState('');
@@ -58,34 +58,6 @@ export default function TicketsView({ tickets, cargando, error, onReintentar }) 
     setTimeout(() => setMensajeExito(''), 3000);
     if (onReintentar) {
       onReintentar();
-    }
-  }
-
-  async function ejecutarAccion(codigoTicket, accionNombre, accionNumero) {
-    if (accionNumero === 1) {
-      setTicketAAsignar(codigoTicket);
-      return;
-    }
-
-    if (!window.confirm(`¿Estás seguro que quieres ${accionNombre} el ticket #${codigoTicket}?`)) {
-      return;
-    }
-
-    setProcesando(true);
-    try {
-      const respuesta = await cambiarEstadoTicket(codigoTicket, accionNumero);
-      if (respuesta.exito) {
-        alert(`✅ Ticket ${accionNombre} correctamente`);
-        if (onReintentar) {
-          onReintentar();
-        }
-      } else {
-        alert(`❌ Error: ${respuesta.mensaje || respuesta.detalle}`);
-      }
-    } catch (err) {
-      alert(`❌ Error: ${err.message}`);
-    } finally {
-      setProcesando(false);
     }
   }
 
@@ -131,21 +103,35 @@ function onResolucionExitosa() {
   if (onReintentar) onReintentar();
 }
 
-  function obtenerBotonesAccion(ticket) {
+ function obtenerBotonesAccion(ticket) {
     const botones = [];
     const estado = ticket.codigoEstado;
+    const rol = usuario?.rol || 'Solicitante';
 
-    if (estado === 2) {
-      botones.push({ nombre: 'Asignar', accion: 1, clase: 'btn-naranja' });
+    // ⭐ Los Agentes NO pueden Asignar. Solo Admin y SuperUsuario.
+    const puedeAsignar = rol === 'Admin' || rol === 'SuperUsuario';
+
+    if (estado === 2) { // Nueva
+      if (puedeAsignar) {
+        botones.push({ nombre: 'Asignar', accion: 1, clase: 'btn-naranja' });
+      }
       botones.push({ nombre: 'Cancelar', accion: 2, clase: 'btn-rojo' });
-    } else if (estado === 3) {
+    } else if (estado === 3) { // Asignada
       botones.push({ nombre: 'Iniciar', accion: 3, clase: 'btn-morado' });
+      if (puedeAsignar) {
+        botones.push({ nombre: 'Reasignar', accion: 1, clase: 'btn-naranja' });
+      }
       botones.push({ nombre: 'Cancelar', accion: 2, clase: 'btn-rojo' });
-    } else if (estado === 4) {
+    } else if (estado === 4) { // En Proceso
       botones.push({ nombre: 'Resolver', accion: 4, clase: 'btn-verde' });
+      if (puedeAsignar) {
+        botones.push({ nombre: 'Reasignar', accion: 1, clase: 'btn-naranja' });
+      }
       botones.push({ nombre: 'Cancelar', accion: 2, clase: 'btn-rojo' });
-    } else if (estado === 5) {
-      botones.push({ nombre: 'Cerrar', accion: 5, clase: 'btn-gris' });
+    } else if (estado === 5) { // Resuelta
+      if (puedeAsignar) {
+        botones.push({ nombre: 'Cerrar', accion: 5, clase: 'btn-gris' });
+      }
     }
 
     return botones;

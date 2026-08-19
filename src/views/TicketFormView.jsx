@@ -62,12 +62,14 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
       }
       
       // Validar extensión
-      const extensionesPermitidas = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-      if (!extensionesPermitidas.includes(file.type)) {
-        setErrorApi('Solo se permiten imágenes (JPG, PNG, GIF) o PDF.');
-        e.target.value = '';
-        return;
-      }
+      const extensionesPermitidas = [
+  'image/jpeg', 'image/png', 'image/gif', 'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc
+  'application/zip', 'application/x-zip-compressed' // .zip
+]
 
       setArchivoSeleccionado(file);
       setErrorApi(null);
@@ -90,7 +92,7 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
     return Object.keys(nuevosErrores).length === 0;
   }
 
-  async function handleSubmit(e) {
+    async function handleSubmit(e) {
     e.preventDefault();
     if (!validar()) return;
 
@@ -108,20 +110,23 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
       });
 
       if (respuesta.exito) {
-        // 2. Si hay archivo, subirlo
+        // 2. Si hay archivo, intentar subirlo (blindado con try/catch propio)
         if (archivoSeleccionado) {
-          // Aquí asumimos que la respuesta de crearTicket nos devuelve el ID del nuevo ticket
-          // Si tu API no lo devuelve, tendríamos que ajustar el backend para que lo devuelva.
-          const nuevoTicketId = respuesta.datos?.codigoTicket || respuesta.datos;
-          
-          if (nuevoTicketId) {
+          try {
+            const nuevoTicketId = respuesta.datos; // Aquí recibimos el ID del backend
             const respAdjunto = await subirAdjuntoTicket(nuevoTicketId, archivoSeleccionado);
+            
             if (!respAdjunto.exito) {
-              // Si el adjunto falla, el ticket ya fue creado, pero avisamos al usuario
-              alert('El ticket se creó, pero hubo un error al subir el archivo: ' + (respAdjunto.mensaje || ''));
+              // Si el adjunto falla, el ticket ya fue creado, avisamos pero no rompemos
+              console.error('Error al subir adjunto:', respAdjunto.mensaje);
+             alert('⚠️ El ticket se creó, pero hubo un error al subir el archivo: ' + (respAdjunto.mensaje || 'Error desconocido'));
             }
+          } catch (errSubida) {
+            console.error('Excepción al subir adjunto:', errSubida);
+            alert('⚠️ El ticket se creó, pero el archivo no pudo subirse. Revisa la consola.');
           }
         }
+        // Si todo salió bien (o el ticket se creó aunque el archivo fallara), cerramos modal
         onGuardadoExitoso();
       } else {
         setErrorApi(respuesta.mensaje || 'Error al crear el ticket.');
@@ -238,7 +243,7 @@ export default function TicketFormView({ onGuardadoExitoso, onCancelar }) {
           id="adjunto"
           name="adjunto"
           onChange={handleFileChange}
-          accept="image/png, image/jpeg, image/gif, application/pdf"
+          accept="image/png, image/jpeg, image/gif, application/pdf, .xlsx, .xls, .docx, .doc, .zip, .rar"
           className="input-file"
         />
         <span className="field-hint">Formatos permitidos: JPG, PNG, GIF, PDF (Máx 5MB)</span>
