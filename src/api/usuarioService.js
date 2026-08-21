@@ -5,6 +5,23 @@ export async function consultarUsuarios() {
   return await apiClient('/api/Usuario/ListaUsuario');
 }
 
+export async function agregarUsuario(usuario) {
+  return await apiClient('/api/Usuario/agregarUsuario', {
+    method: 'POST',
+    body: usuario,
+  });
+}
+
+export async function buscarUsuario(codigoUsuario) {
+  return await apiClient(`/api/Usuario/BuscarUsuario/${codigoUsuario}`);
+}
+
+export async function editarUsuario(usuario) {
+  return await apiClient('/api/Usuario/EditarUsuario', {
+    method: 'PUT',
+    body: usuario,
+  });
+}
 // Subir un adjunto a un ticket creado
 export async function subirAdjuntoTicket(codigoTicket, archivo) {
   const formData = new FormData();

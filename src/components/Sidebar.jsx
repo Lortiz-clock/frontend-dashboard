@@ -5,6 +5,7 @@ const MENU_COMPLETO = [
   { id: 'Dashboard', icon: '📊', label: 'Dashboard' },
   { id: 'Tickets',   icon: '🎫', label: 'Tickets' },
   { id: 'Empresas',  icon: '🏢', label: 'Empresas' },
+  { id: 'Usuarios',  icon: '👥', label: 'Usuarios' },
   { id: 'Reportes',  icon: '📈', label: 'Reportes' },
 ];
 

@@ -44,21 +44,32 @@ export async function apiClient(ruta, opciones = {}) {
   try {
     const response = await fetch(urlCompleta, config);
 
-    // ⭐ INTERCEPTOR 401: si el token expiró o es inválido, cerrar sesión
-    if (response.status === 401) {
-      logout();
-      // Redirigir al welcome recargando la página
-      window.location.reload();
-      return { exito: false, mensaje: 'Sesión expirada.', datos: null, detalle: 'NO_AUTENTICADO' };
-    }
-
+       // Si la respuesta NO fue exitosa (ej. 400, 401, 500)
     if (!response.ok) {
+      
+      // 1. Intentamos leer el mensaje de error que envió tu API en C#
       let errorData;
       try {
         errorData = await response.json();
       } catch {
         throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
       }
+
+      // 2. INTERCEPTOR 401: Si es un 401 (No autorizado)
+      if (response.status === 401) {
+        
+        // Si NO es la ruta de login, significa que el token expiró
+        if (!ruta.includes('/api/Auth/login')) {
+          logout();
+          window.location.reload(); // Redirige al welcome
+        } else {
+          // Si ES la ruta de login, significa que las credenciales son incorrectas
+          // Tomamos el mensaje que envió tu backend, o uno por defecto
+          errorData.mensaje = errorData.mensaje || 'Credenciales no válidas. Verifica tu correo y contraseña.';
+        }
+      }
+
+      // 3. Devolvemos el objeto de error para que tu frontend lo muestre
       return errorData;
     }
 

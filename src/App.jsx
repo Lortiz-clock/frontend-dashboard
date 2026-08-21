@@ -21,6 +21,7 @@ import DashboardView from './views/DashboardView.jsx';
 import TicketsView from './views/TicketsView.jsx';
 import EmpresasView from './views/EmpresasView.jsx';
 import ReportesView from './views/ReportesView.jsx';
+import UsuariosView from './views/UsuariosView.jsx';
 
 import { consultarTickets } from './api/ticketService.js';
 import { isAuthenticated, getUsuario, logout } from './api/authService.js';
@@ -125,6 +126,8 @@ function App() {
         );
       case 'Empresas':
         return <EmpresasView usuario={usuarioActual} />;
+        case 'Usuarios':
+        return <UsuariosView usuario={usuarioActual} />;
       case 'Reportes':
         return <ReportesView tickets={tickets} />;
       default:
